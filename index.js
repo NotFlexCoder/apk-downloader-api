@@ -8,16 +8,16 @@ app.get("/", async (req, res) => {
   if (!query) return res.status(400).json({ error: "Query missing" });
 
   try {
-    const searchUrl = `https://ws2.aptoide.com/api/6/bulkRequest/api_list/search?query=${encodeURIComponent(query)}&limit=1`;
+    const apiUrl = `https://web-api-cache.aptoide.com/search?query=${encodeURIComponent(query)}&country=en&mature=false`;
+    const response = await axios.get(apiUrl);
 
-    const response = await axios.get(searchUrl);
-    const apps = response.data?.responses?.[0]?.data?.list;
-
-    if (!apps || apps.length === 0) {
-      return res.status(404).json({ error: "App not found" });
-    }
+    const apps = response.data?.d?.apps;
+    if (!apps || apps.length === 0) return res.status(404).json({ error: "App not found" });
 
     const appData = apps[0];
+    const downloadUrl = appData?.file?.path;
+
+    if (!downloadUrl) return res.status(404).json({ error: "Download link not found" });
 
     res.json({
       name: appData.name,
@@ -25,9 +25,9 @@ app.get("/", async (req, res) => {
       version: appData.file.vername,
       size: appData.file.filesize,
       icon: appData.icon,
-      download: appData.file.path
+      download: downloadUrl
     });
-  } catch (e) {
+  } catch {
     res.status(500).json({ error: "Something went wrong" });
   }
 });
